@@ -1,4 +1,4 @@
-const tbodyExterno = document.querySelector("#tabla tbody");
+const tbodyExterno = document.querySelector("#tablaExterno tbody");
 const contSolicitudes = document.getElementById("contenedorSolicitudes");
 
 let personas = [];
@@ -105,8 +105,10 @@ async function cargarExterno() {
 }
 
 // listeners externo
-document.getElementById("filtroEmpresa")?.addEventListener("change", aplicarFiltrosExterno);
-document.getElementById("filtroEmpresa").addEventListener("change", aplicarFiltrosExterno);
+const filtroEmpresa = document.getElementById("filtroEmpresa");
+if (filtroEmpresa) {
+  filtroEmpresa.addEventListener("change", aplicarFiltros);
+}
 
 // ============================
 // ADMIN: render con “Guardar cambios” por solicitud
@@ -391,7 +393,7 @@ function construirOpcionesEmpresaExterno(data) {
 }
 
 function aplicarFiltrosExterno() {
-  const q = (document.getElementById("buscador")?.value || "").trim();
+  const q = (document.getElementById("buscador")?.value.Trim() || "").trim();
   const sel = document.getElementById("filtroEmpresa");
   const empresa = (sel?.value || "").trim();
 
