@@ -65,7 +65,7 @@ def obtener_personas_vigentes_externo():
     if idx_fecha_fin == -1:
         idx_fecha_fin = 21  # fallback (col V)
 
-    COL_CERT = 25  # Z (0-based)
+    # SOLO INDUCCION + SS (según tu pipeline: AA y AD)
     COL_IND  = 26  # AA
     COL_SS   = 29  # AD
 
@@ -80,13 +80,10 @@ def obtener_personas_vigentes_externo():
         if not fin or fin < hoy:
             continue
 
-        certificados = r[COL_CERT] if COL_CERT < len(r) else ""
         induccion = r[COL_IND] if COL_IND < len(r) else ""
         seguridad = r[COL_SS] if COL_SS < len(r) else ""
 
         motivos = []
-        if certificados != "CUMPLE":
-            motivos.append("Certificados incompletos")
         if induccion != "VIGENTE":
             motivos.append("Inducción vencida o no registrada")
         if seguridad != "VIGENTE":
@@ -98,7 +95,6 @@ def obtener_personas_vigentes_externo():
             "nombre": f"{r[idx_nombre] if idx_nombre!=-1 else ''} {r[idx_apellido] if idx_apellido!=-1 else ''}".strip(),
             "cedula": r[idx_cedula],
             "empresa": r[idx_empresa] if idx_empresa!=-1 else "",
-            "certificados": certificados,
             "induccion": induccion,
             "seguridadSocial": seguridad,
             "estado": estado,
@@ -148,14 +144,19 @@ def obtener_solicitudes_admin():
 
     idx_consec = idx("CONSECUTIVO")
     if idx_consec == -1:
-        # Ajusta si tu consecutivo está en otra columna real
-        idx_consec = 23
+        idx_consec = 23  # fallback
 
-    COL_CERT = 25
-    COL_IND  = 26
-    COL_SS   = 29
+    # SOLO INDUCCION + SS
+    COL_IND  = 26  # AA
+    COL_SS   = 29  # AD
 
     solicitudes = {}
+
+    def safe_get(row, i):
+        if i is None or i < 0 or i >= len(row):
+            return ""
+        v = row[i]
+        return "" if v is None else str(v).strip()
 
     for sheet_row, r in enumerate(rows, start=2):
         if idx_cedula == -1 or idx_cedula >= len(r) or not r[idx_cedula]:
@@ -165,47 +166,55 @@ def obtener_solicitudes_admin():
         if not fin or fin < hoy:
             continue
 
+        empresa = safe_get(r, idx_empresa)
+        nit = safe_get(r, idx_nit)
+        hora_ing = safe_get(r, idx_hora_ing)
+        hora_sal = safe_get(r, idx_hora_sal)
+        tipo_trabajo = safe_get(r, idx_tipo)
+        extension = safe_get(r, idx_ext)
+        interventor = safe_get(r, idx_interv)
+        turno = safe_get(r, idx_turno)
+        fecha_inicio = safe_get(r, idx_fini)
+        fecha_fin = safe_get(r, idx_ffin)
+
         key = "|".join([
-            str(r[idx_empresa]) if idx_empresa!=-1 else "",
-            str(r[idx_nit]) if idx_nit!=-1 else "",
-            str(r[idx_hora_ing]) if idx_hora_ing!=-1 else "",
-            str(r[idx_hora_sal]) if idx_hora_sal!=-1 else "",
-            str(r[idx_tipo]) if idx_tipo!=-1 else "",
-            str(r[idx_ext]) if idx_ext!=-1 else "",
-            str(r[idx_interv]) if idx_interv!=-1 else "",
-            str(r[idx_turno]) if idx_turno!=-1 else "",
-            str(r[idx_fini]) if idx_fini!=-1 else "",
-            str(r[idx_ffin]) if idx_ffin!=-1 else "",
+            empresa, nit, hora_ing, hora_sal, tipo_trabajo,
+            extension, interventor, turno, fecha_inicio, fecha_fin
         ])
 
         if key not in solicitudes:
             solicitudes[key] = {
-                "id": key,
-                "empresa": r[idx_empresa] if idx_empresa!=-1 else "",
-                "nit": r[idx_nit] if idx_nit!=-1 else "",
-                "horaIngreso": r[idx_hora_ing] if idx_hora_ing!=-1 else "",
-                "horaSalida": r[idx_hora_sal] if idx_hora_sal!=-1 else "",
-                "tipoTrabajo": r[idx_tipo] if idx_tipo!=-1 else "",
-                "extension": r[idx_ext] if idx_ext!=-1 else "",
-                "interventor": r[idx_interv] if idx_interv!=-1 else "",
-                "turno": r[idx_turno] if idx_turno!=-1 else "",
-                "fechaInicio": r[idx_fini] if idx_fini!=-1 else "",
-                "fechaFin": r[idx_ffin] if idx_ffin!=-1 else "",
+                "empresa": empresa,
+                "nit": nit,
+                "horaIngreso": hora_ing,
+                "horaSalida": hora_sal,
+                "tipoTrabajo": tipo_trabajo,
+                "extension": extension,
+                "interventor": interventor,
+                "turno": turno,
+                "fechaInicio": fecha_inicio,
+                "fechaFin": fecha_fin,
                 "personas": []
             }
 
+        induccion = safe_get(r, COL_IND)
+        seguridadSocial = safe_get(r, COL_SS)
+
         motivos = []
-        if COL_CERT < len(r) and r[COL_CERT] != "CUMPLE": motivos.append("Certificados")
-        if COL_IND < len(r) and r[COL_IND] != "VIGENTE": motivos.append("Inducción")
-        if COL_SS < len(r) and r[COL_SS] != "VIGENTE": motivos.append("Seguridad Social")
+        if induccion != "VIGENTE":
+            motivos.append("Inducción")
+        if seguridadSocial != "VIGENTE":
+            motivos.append("Seguridad Social")
 
         solicitudes[key]["personas"].append({
             "row": sheet_row,
-            "nombre": f"{r[idx_nombre] if idx_nombre!=-1 else ''} {r[idx_apellido] if idx_apellido!=-1 else ''}".strip(),
-            "cedula": r[idx_cedula],
+            "nombre": f"{safe_get(r, idx_nombre)} {safe_get(r, idx_apellido)}".strip(),
+            "cedula": safe_get(r, idx_cedula),
+            "induccion": induccion,
+            "seguridadSocial": seguridadSocial,
             "estado": "CUMPLE" if not motivos else "REVISAR",
             "motivo": " · ".join(motivos),
-            "consecutivo": r[idx_consec] if idx_consec < len(r) else ""
+            "consecutivo": safe_get(r, idx_consec)
         })
 
     return list(solicitudes.values())
@@ -217,7 +226,46 @@ def actualizar_consecutivo(row: int, consecutivo: str):
     if not base_id:
         raise RuntimeError("Falta SPREADSHEET_BASE_ID en .env")
 
-    # Si tu consecutivo está en columna X:
-    col_letter = "X"
+    col_letter = "X"  # tu consecutivo
     range_a1 = f"{base_name}!{col_letter}{row}"
     write_sheet_value(base_id, range_a1, consecutivo)
+
+def actualizar_consecutivos_batch(changes: list[dict]):
+    """
+    changes = [{"row": 12, "consecutivo": "3553"}, ...]
+    Escribe en columna X (CONSECUTIVO) de Base_Personas en batch (rápido).
+    """
+    base_id = os.getenv("SPREADSHEET_BASE_ID")
+    base_name = os.getenv("SHEET_BASE_NAME", "Base_Personas")
+    if not base_id:
+        raise RuntimeError("Falta SPREADSHEET_BASE_ID en .env")
+
+    svc = sheets_service()
+
+    # columna del consecutivo
+    col_letter = "X"
+
+    data = []
+    for c in changes:
+        try:
+            row = int(c["row"])
+            consecutivo = str(c.get("consecutivo", "")).strip()
+        except Exception:
+            continue
+
+        if not consecutivo:
+            continue
+
+        data.append({
+            "range": f"{base_name}!{col_letter}{row}",
+            "values": [[consecutivo]]
+        })
+
+    if not data:
+        return
+
+    svc.spreadsheets().values().batchUpdate(
+        spreadsheetId=base_id,
+        body={"valueInputOption": "USER_ENTERED", "data": data}
+    ).execute()
+
