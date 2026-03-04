@@ -332,7 +332,7 @@ async function cargarAdmin() {
 // botones admin
 document.getElementById("btnEntrarAdmin").addEventListener("click", async () => {
   ADMIN_TOKEN = document.getElementById("adminToken").value.trim();
-  if (!ADMIN_TOKEN) return alert("Ingresa el token admin");
+  if (!ADMIN_TOKEN) return alert("Ingresa la contraseña de Administrador");
   await cargarAdmin();
 });
 
