@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -12,40 +13,36 @@
 
 <main>
 
-  <!-- ===== LOGIN ADMIN (NO ROMPE EXTERNO) ===== -->
-  <div class="admin-bar">
-    <input type="password" id="adminToken" placeholder="Contraseña Administrador">
-    <button id="btnEntrarAdmin" type="button">Entrar admin</button>
-    <span id="modo"></span>
+  <!-- Barra superior: buscador + filtro empresa + acceso admin -->
+  <div class="topbar">
+    <div class="search-box" style="display:flex; gap:10px; align-items:center;">
+      <input type="text" id="buscador" placeholder="Buscar por cédula…">
+
+      <!-- NUEVO: filtro empresa (externo) -->
+      <select id="filtroEmpresa" class="select">
+        <option value="">Todas las empresas</option>
+      </select>
+    </div>
+
+    <div class="admin-box">
+      <input type="password" id="adminToken" placeholder="Contraseña Administrador">
+      <button id="btnEntrarAdmin">Entrar</button>
+      <button id="btnSalirAdmin" class="hidden">Salir</button>
+      <div id="modo" class="modo"></div>
+    </div>
   </div>
 
-  <!-- ===== VISTA ADMIN (OCULTA POR DEFECTO) ===== -->
-  <section id="vistaAdmin" class="hidden">
-    <h2 style="margin-top:0;">📋 Solicitudes activas – Vista Administrador</h2>
-    <div id="contenedorSolicitudes"></div>
-
-    <footer>
-      Sistema interno · Vista Administrador
-    </footer>
-  </section>
+  <div id="estadoActualizacion"></div>
 
   <!-- ===== VISTA EXTERNO ===== -->
   <section id="vistaExterno">
-
-    <div class="search-box">
-      <input type="text" id="buscador" placeholder="Buscar por cédula…">
-    </div>
-
-    <div id="estadoActualizacion"></div>
-
     <div class="table-wrapper">
-      <table id="tablaExterno">
+      <table id="tabla">
         <thead>
           <tr>
             <th>Nombre</th>
             <th>Cédula</th>
             <th>Empresa</th>
-            <th>Certificados</th>
             <th>Inducción</th>
             <th>Seguridad Social</th>
             <th>Estado General</th>
@@ -58,12 +55,30 @@
     <footer>
       Sistema interno · Uso corporativo
     </footer>
+  </section>
 
+  <!-- ===== VISTA ADMIN (ACORDEÓN POR SOLICITUD) ===== -->
+  <section id="vistaAdmin" class="hidden">
+    <div class="adminHeaderRow">
+
+      <!-- stats mini (solo admin) -->
+      <div class="miniStats">
+        <div class="chip"><span>Activos</span><b id="statTotal">0</b></div>
+        <div class="chip ok"><span>Cumplen</span><b id="statCumple">0</b></div>
+        <div class="chip warn"><span>Revisar</span><b id="statRevisar">0</b></div>
+      </div>
+    </div>
+
+    <div id="contenedorSolicitudes"></div>
+
+    <footer>
+      Sistema interno · Vista Administrador
+    </footer>
   </section>
 
 </main>
 
-<!-- ===== MODAL (EXTERNO) ===== -->
+<!-- MODAL EXTERNO (REVISAR) -->
 <div id="modal" class="modal">
   <div class="modal-card">
     <h3>Documentos por actualizar</h3>
@@ -77,7 +92,7 @@
     </a>
 
     <div style="text-align:right; margin-top:20px;">
-      <button type="button" onclick="cerrarModal()">Cerrar</button>
+      <button onclick="cerrarModal()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -85,5 +100,4 @@
 <script src="/static/app.js"></script>
 </body>
 </html>
-
 
