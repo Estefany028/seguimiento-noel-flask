@@ -1,3 +1,4 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -12,7 +13,23 @@
 
 <main>
 
-  <h2>📋 Solicitudes activas – Vista Administrador</h2>
+  <!-- Topbar admin: filtro empresa + stats mini -->
+  <div class="topbar admin-only">
+    <div class="filters-left">
+      <div class="filter-box">
+        <select id="filtroEmpresa">
+          <option value="">Todas las empresas</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="miniStats">
+      <div class="chip"><span>Activos</span><b id="statTotal">0</b></div>
+      <div class="chip ok"><span>Cumplen</span><b id="statCumple">0</b></div>
+      <div class="chip warn"><span>Revisar</span><b id="statRevisar">0</b></div>
+    </div>
+  </div>
+
   <div id="adminSolicitudes"></div>
 
   <footer>
@@ -29,3 +46,4 @@
 
 </body>
 </html>
+
