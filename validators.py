@@ -90,38 +90,14 @@ def _read_google_doc_text(docs, doc_id: str) -> str:
     return re.sub(r"\s+", " ", "".join(out)).strip()
 
 def leer_texto_pdf_desde_drive(drive, docs, file_id: str) -> str:
-    """
-    Estrategia robusta:
-    1) Descargar bytes PDF + extraer texto (pymupdf / pypdf)
-    2) Si texto vacío, convertir PDF -> Google Doc y leer texto con Docs API
-    """
     pdf_bytes = _download_drive_bytes(drive, file_id)
     text = _extract_text_from_pdf_bytes(pdf_bytes)
 
     if text:
         return text
 
-    # Fallback: convertir PDF -> Google Doc (requiere scope drive)
-    # Nota: esto crea un archivo temporal en Drive, luego lo borramos.
-    copied = drive.files().copy(
-        fileId=file_id,
-        supportsAllDrives=True,
-        body={"mimeType": "application/vnd.google-apps.document"}
-    ).execute()
-
-    doc_id = copied["id"]
-
-    try:
-        text = _read_google_doc_text(docs, doc_id)
-        return text or ""
-    finally:
-        # borrar el doc temporal
-        try:
-            drive.files().delete(fileId=doc_id, supportsAllDrives=True).execute()
-        except Exception:
-            pass
-
-
+    return ""
+    
 # ==========================
 # Extracción de fecha (mejorada)
 # - Mantiene tu enfoque por keywords/patrones
