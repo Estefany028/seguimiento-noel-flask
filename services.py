@@ -112,20 +112,25 @@ def obtener_personas_vigentes_externo():
 
     idx_nombre = find_col("NOMBRES")
     idx_apellido = find_col("APELLIDOS")
-    idx_empresa = find_col("EMPRESA")
+    idx_empresa = headers.index("EMPRESA") if "EMPRESA" in headers else -1
     idx_cedula = find_col("CEDULA")
 
     idx_ind = find_col("INDUCCIÓN")
     idx_ss = find_col("VIGENCIA SS")
     idx_leido = find_col("LEIDO")
+
+    idx_fini = find_col("FECHA DE INICIO")
+    idx_ffin = find_col("FECHA FIN")
      
     if idx_leido == -1:
         print("ERROR: No se encontró la columna LEIDO")
 
     out = []
 
+    personas_dict = {}
+
+    # PRIMER LOOP → guardar último registro
     for r in rows:
-        print("SERVICES NUEVO CARGADO")
 
         if idx_cedula >= len(r):
             continue
@@ -134,6 +139,12 @@ def obtener_personas_vigentes_externo():
 
         if not ced:
             continue
+
+        personas_dict[ced] = r
+
+
+    # SEGUNDO LOOP → procesar personas
+    for r in personas_dict.values():
 
         nombre = ""
         if idx_nombre < len(r):
@@ -146,6 +157,24 @@ def obtener_personas_vigentes_externo():
         induccion = r[idx_ind] if idx_ind < len(r) else ""
         seguridad = r[idx_ss] if idx_ss < len(r) else ""
         leido = r[idx_leido] if idx_leido < len(r) else ""
+
+        hoy = _hoy_date()
+
+        fecha_inicio = None
+        fecha_fin = None
+
+        if idx_fini < len(r):
+            fecha_inicio = _parse_sheet_date(r[idx_fini])
+
+        if idx_ffin < len(r):
+            fecha_fin = _parse_sheet_date(r[idx_ffin])
+
+        # mostrar solo personas activas hoy
+        if fecha_fin is None:
+            continue
+
+        if fecha_fin < hoy:
+            continue
 
         motivos = []
 
@@ -246,7 +275,7 @@ def obtener_solicitudes_admin():
     headers = values[0]
     rows = values[1:]
 
-    idx_empresa = _find_col(headers, "EMPRESA")
+    idx_empresa = headers.index("EMPRESA") if "EMPRESA" in headers else -1
     idx_nit = _find_col(headers, "NIT")
 
     idx_hora_ing = _find_col(headers, "HORA INGRESO")
@@ -289,6 +318,23 @@ def obtener_solicitudes_admin():
         if idx_ffin < len(r):
             fin = _parse_sheet_date(r[idx_ffin])
 
+        # ===============================
+        # VALIDAR VENCIMIENTO SEGURIDAD SOCIAL
+        # ===============================
+
+        fecha_ss = None
+        if idx_ss < len(r):
+            fecha_ss = _parse_sheet_date(r[idx_ss])
+
+        # si existe fecha de seguridad social
+        if fecha_ss:
+
+            # si la seguridad social vence antes que la solicitud
+            if fin and fecha_ss < fin:
+
+                # limitar la solicitud hasta la fecha de SS
+                fin = fecha_ss
+
         if not fin or fin < hoy:
             continue
 
@@ -299,16 +345,33 @@ def obtener_solicitudes_admin():
         if key not in solicitudes:
 
             solicitudes[key] = {
-
                 "empresa": empresa,
+                "nit": r[idx_nit] if idx_nit < len(r) else "",
+                "horaIngreso": r[idx_hora_ing] if idx_hora_ing < len(r) else "",
+                "horaSalida": r[idx_hora_sal] if idx_hora_sal < len(r) else "",
+                "fechaInicio": r[idx_fini] if idx_fini < len(r) else "",
                 "fechaFin": str(fin),
+                "interventor": r[idx_interv] if idx_interv < len(r) else "",
+                "turno": r[idx_turno] if idx_turno < len(r) else "",
                 "personas": []
-
             }
 
         induccion = r[idx_ind] if idx_ind < len(r) else ""
         seguridad = r[idx_ss] if idx_ss < len(r) else ""
+        fecha_ss = _parse_sheet_date(seguridad)
         leido = r[idx_leido] if idx_leido < len(r) else ""
+
+        fecha_ss = _parse_sheet_date(seguridad)
+
+        semaforo_ss = "ok"
+
+        if fecha_ss:
+            
+            if fecha_ss < hoy:
+                semaforo_ss = "vencida"
+
+            elif fin and fecha_ss < fin:
+                semaforo_ss = "vence_durante"
 
         motivos = []
 
@@ -338,7 +401,8 @@ def obtener_solicitudes_admin():
             "seguridadSocial": seguridad,
             "estado": "CUMPLE" if not motivos else "REVISAR",
             "motivo": " · ".join(motivos),
-            "consecutivo": r[idx_consec] if idx_consec < len(r) else ""
+            "consecutivo": r[idx_consec] if idx_consec < len(r) else "",
+            "ssSemaforo": semaforo_ss
 
         })
 
@@ -361,3 +425,25 @@ def actualizar_consecutivo(row: int, consecutivo: str):
         f"{base_name}!{col_letter}{row}",
         consecutivo
     )
+
+# ===============================
+# ACTUALIZAR MUCHOS CONSECUTIVOS
+# ===============================
+
+def actualizar_consecutivos_batch(changes):
+
+    base_id = os.getenv("SPREADSHEET_BASE_ID")
+    base_name = os.getenv("SHEET_BASE_NAME", "Base_Personas")
+
+    col_letter = "X"   # columna de consecutivo
+
+    for c in changes:
+
+        row = int(c["row"])
+        consecutivo = str(c["consecutivo"]).strip()
+
+        write_sheet_value(
+            base_id,
+            f"{base_name}!{col_letter}{row}",
+            consecutivo
+        )
