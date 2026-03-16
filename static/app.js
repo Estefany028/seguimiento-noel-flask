@@ -1,8 +1,9 @@
 const tbodyExterno = document.querySelector("#tabla tbody");
 const contSolicitudes = document.getElementById("contenedorSolicitudes");
-
 let personas = [];
 let ADMIN_TOKEN = "";
+let solicitudesAdmin = [];
+let filtroAdminActual = "todos";
 
 // ============================
 // BADGES
@@ -124,10 +125,10 @@ function renderTablaExterno(data) {
       <td>${badge(p.seguridadSocial)}</td>
       <td>
         ${
-          p.estado === "REVISAR" || p.estado === "BLOQUEADO"
+          p.estado === "REVISAR"
             ? `<span class="badge warn btnDetalle" style="cursor:pointer">REVISAR</span>`
           : p.estado === "BLOQUEADO"
-            ? `<span class="badge bad">BLOQUEADO</span>`
+            ? `<span class="badge bad btnDetalle" style="cursor:pointer">BLOQUEADO</span>`
             : `<span class="badge ok">CUMPLE</span>`
         }
       </td>
@@ -225,28 +226,46 @@ async function cargarAdmin() {
   }
 
   const solicitudes = await r.json();
+  solicitudesAdmin = solicitudes;
 
-  document.getElementById("modo").innerText = "✅ Modo Admin";
+  const modo = document.getElementById("modo");
+    if (modo) modo.innerText = "✅ Modo Admin";
 
-  document
-    .getElementById("vistaExterno")
-    .classList.add("hidden");
+    const vistaExterno = document.getElementById("vistaExterno");
+    if (vistaExterno) vistaExterno.classList.add("hidden");
 
-  document
-    .getElementById("vistaAdmin")
-    .classList.remove("hidden");
+    const vistaAdmin = document.getElementById("vistaAdmin");
+    if (vistaAdmin) vistaAdmin.classList.remove("hidden");
 
-  document
-    .getElementById("btnSalirAdmin")
-    .classList.remove("hidden");
+    const btnSalirAdmin = document.getElementById("btnSalirAdmin");
+    if (btnSalirAdmin) btnSalirAdmin.classList.remove("hidden");
 
-  renderSolicitudesAdmin(solicitudes);
+    document.querySelector("#statTotal").parentElement.addEventListener("click", () => {
+    filtrarSolicitudesAdmin("todos");
+    });
+
+    document.querySelector("#statCumple").parentElement.addEventListener("click", () => {
+      filtrarSolicitudesAdmin("cumple");
+    });
+
+    document.querySelector("#statRevisar").parentElement.addEventListener("click", () => {
+      filtrarSolicitudesAdmin("revisar");
+    });
+
+    document.getElementById("buscadorAdmin")?.addEventListener("input", buscarEnSolicitudes);
+
+  filtrarSolicitudesAdmin(filtroAdminActual);
+
+  const now = new Date();
+  setUpdatePill("Actualizado: " + now.toLocaleTimeString());
 
   return true;
 
 }
 
 function renderSolicitudesAdmin(solicitudes) {
+
+  const contSolicitudes = document.getElementById("contenedorSolicitudes");
 
   contSolicitudes.innerHTML = "";
 
@@ -268,26 +287,27 @@ function renderSolicitudesAdmin(solicitudes) {
 
     const personasRows = (sol.personas || []).map(p => {
 
-      return `
-        <tr>
-          <td>${p.nombre || ""}</td>
-          <td>${p.cedula || ""}</td>
-          <td>${badge(p.induccion)}</td>
-          <td>${badge(p.seguridadSocial)}</td>
-          <td>${badge(p.estado)}</td>
-          <td>${p.motivo || ""}</td>
-          <td>
-            <input
-              class="consecutivoInput"
-              data-row="${p.row}"
-              value="${(p.consecutivo || "").trim()}"
-              placeholder="Ej: 3553"
-            />
-          </td>
-        </tr>
-      `;
+    return `
+      <tr>
+        <td>${p.nombre || ""}</td>
+        <td>${p.cedula || ""}</td>
+        <td>${badge(p.induccion)}</td>
+        <td>${badge(p.seguridadSocial)}</td>
+        <td>${badge(p.estado)}</td>
+        <td>${p.motivo || ""}</td>
+        <td>
+          <input
+            class="consecutivoInput"
+            data-row="${p.row}"
+            value="${(p.consecutivo || "").trim()}"
+            placeholder="Ej: 3553"
+            style="width:90px;"
+          />
+        </td>
+      </tr>
+    `;
 
-    }).join("");
+  }).join("");
 
     let cumple = 0;
 let revisar = 0;
@@ -332,6 +352,11 @@ if (revisar === sol.personas.length) {
 
       <div class="cardBody">
 
+      <div class="adminActions">
+        <button class="guardarEmpresa">Guardar cambios</button>
+        <span class="estadoCambios">Sin cambios</span>
+      </div>
+
         <table class="adminTable">
           <thead>
             <tr>
@@ -359,7 +384,133 @@ if (revisar === sol.personas.length) {
 
     contSolicitudes.appendChild(card);
 
-  });
+    const btnGuardar = card.querySelector(".guardarEmpresa");
+
+    btnGuardar.addEventListener("click", async () => {
+
+      const inputs = card.querySelectorAll(".consecutivoInput");
+
+      const changes = [];
+
+      inputs.forEach(input => {
+
+        const consecutivo = input.value.trim();
+        const row = input.dataset.row;
+
+        if(consecutivo){
+          changes.push({
+            row: row,
+            consecutivo: consecutivo
+          });
+        }
+
+      });
+
+      if(changes.length === 0){
+        alert("No hay consecutivos para guardar");
+        return;
+      }
+
+      const r = await fetch("/api/admin/consecutivos/batch",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "X-ADMIN-TOKEN": ADMIN_TOKEN
+        },
+        body: JSON.stringify({
+          changes: changes
+        })
+      });
+
+      const res = await r.json();
+
+      if(res.ok){
+        card.querySelector(".estadoCambios").innerText = "✓ Cambios guardados";
+      }else{
+        alert("Error guardando consecutivos");
+      }
+
+    });
+
+    });
+
+}
+
+function filtrarSolicitudesAdmin(tipo) {
+
+  // quitar activo a todos
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+
+  if(tipo === "todos"){
+    document.querySelector("#statTotal").parentElement.classList.add("active");
+  }
+
+  if(tipo === "cumple"){
+    document.querySelector("#statCumple").parentElement.classList.add("active");
+  }
+
+  if(tipo === "revisar"){
+    document.querySelector("#statRevisar").parentElement.classList.add("active");
+  }
+
+  filtroAdminActual = tipo;
+
+  if (!solicitudesAdmin || solicitudesAdmin.length === 0) return;
+
+  let filtradas;
+
+  if (tipo === "todos") {
+    filtradas = solicitudesAdmin;
+  } else {
+
+    filtradas = solicitudesAdmin.map(sol => {
+
+      const personasFiltradas = (sol.personas || []).filter(p => {
+
+        const estado = (p.estado || "").toUpperCase();
+
+        if (tipo === "cumple") return estado === "CUMPLE";
+
+        if (tipo === "revisar") return estado !== "CUMPLE";
+
+      });
+
+      return {
+        ...sol,
+        personas: personasFiltradas
+      };
+
+    }).filter(sol => sol.personas.length > 0);
+
+  }
+
+  renderSolicitudesAdmin(filtradas);
+
+}
+
+function buscarEnSolicitudes(){
+
+  const q = document.getElementById("buscadorAdmin")?.value.trim();
+
+  if(!q){
+    filtrarSolicitudesAdmin(filtroAdminActual);
+    return;
+  }
+
+  const filtradas = solicitudesAdmin.map(sol=>{
+
+    const personas = (sol.personas || []).filter(p=>{
+      return String(p.cedula || "").includes(q);
+    });
+
+    return {
+      ...sol,
+      personas
+    };
+
+  }).filter(sol=>sol.personas.length>0);
+
+  renderSolicitudesAdmin(filtradas);
 
 }
 
@@ -367,9 +518,10 @@ if (revisar === sol.personas.length) {
 // BOTONES ADMIN
 // ============================
 
-document
-  .getElementById("btnEntrarAdmin")
-  .addEventListener("click", async () => {
+const btnEntrarAdmin = document.getElementById("btnEntrarAdmin");
+
+if (btnEntrarAdmin) {
+  btnEntrarAdmin.addEventListener("click", async () => {
 
     ADMIN_TOKEN =
       document.getElementById("adminToken").value.trim();
@@ -381,10 +533,12 @@ document
     await cargarAdmin();
 
   });
+}
 
-document
-  .getElementById("btnSalirAdmin")
-  .addEventListener("click", async () => {
+const btnSalirAdmin = document.getElementById("btnSalirAdmin");
+
+if (btnSalirAdmin) {
+  btnSalirAdmin.addEventListener("click", async () => {
 
     ADMIN_TOKEN = "";
 
@@ -400,12 +554,10 @@ document
       .getElementById("vistaExterno")
       .classList.remove("hidden");
 
-    document
-      .getElementById("btnSalirAdmin")
-      .classList.add("hidden");
+    btnSalirAdmin.classList.add("hidden");
 
   });
-
+}
 // ============================
 // STATS
 // ============================
@@ -456,9 +608,17 @@ function setUpdatePill(text) {
 
 (async function init() {
 
-  await cargarExterno();
+  if (window.__MODE__ === "admin") {
 
-  setInterval(cargarExterno, 30000);
+    ADMIN_TOKEN = "admin"; // si no usas token visual
+    await cargarAdmin();
 
-})();
+  } else {
+
+    await cargarExterno();
+    setInterval(cargarExterno, 30000);
+
+  }
+
+})();;
 
