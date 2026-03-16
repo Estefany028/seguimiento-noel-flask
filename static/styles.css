@@ -1,515 +1,55 @@
-body {
-  margin: 0;
-  font-family: "Segoe UI", Arial, sans-serif;
-  color: #333;
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seguimiento Admin – Galletas Noel</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
 
-  /* 🍪 Fondo de galletas */
-  background-repeat: repeat;
-  background-size: 180px;
-  background-attachment: fixed;
-}
+<body>
 
-/* 🟥 Banner fijo */
-header {
-  height: 125px;
-  background-image: url("https://proplayer20.neocities.org/banner%20%281%29.webp");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+<header></header>
 
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
+<main>
 
-main {
-  padding: 24px 30px 40px;
-}
+  <div class="topbar admin-only">
 
-h2 { margin-top: 0; }
+  <div class="filters-left">
+    <div class="filter-box">
+      <select id="filtroEmpresa">
+        <option value="">Todas las empresas</option>
+      </select>
+    </div>
 
-/* ======= BUSCADOR ======= */
-.search-box {
-  margin-bottom: 0;
-  display: flex;
-  justify-content: flex-end;
-}
+    <input type="text" id="buscadorAdmin" placeholder="Buscar cédula en solicitudes..." />
+    </div>
 
-.search-box input {
-  padding: 10px 14px;
-  width: 260px;
-  font-size: 14px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  background: rgba(255,255,255,.95);
-}
+    <div class="miniStats">
+      <div class="chip"><span>Activos</span><b id="statTotal">0</b></div>
+      <div class="chip ok"><span>Cumplen</span><b id="statCumple">0</b></div>
+      <div class="chip warn"><span>Revisar</span><b id="statRevisar">0</b></div>
+    </div>
 
-/* ======= FILTRO EMPRESA ======= */
-.filters-left{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+  </div>
 
-.filter-box select{
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  background: rgba(255,255,255,.95);
-  min-width: 220px;
-  cursor: pointer;
-}
+  <div id="pillUpdate" class="update-pill">
+    Actualizando datos...
+  </div>
 
-#estadoActualizacion {
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: #555;
-}
+  <div id="contenedorSolicitudes"></div>
 
-/* ======= TABLA EXTERNA ======= */
-.table-wrapper {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-  overflow: hidden;
+  <footer>
+    Sistema interno · Vista Administrador
+  </footer>
 
-  max-height: calc(100vh - 260px);
-  overflow-y: auto;
-}
+</main>
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+<script src="/static/app.js"></script>
+<script>
+  // Inicializar modo admin
+  window.__MODE__ = "admin";
+</script>
 
-thead th {
-  background-color: rgba(245,245,245,.95);
-  padding: 12px;
-  font-size: 13px;
-  text-transform: uppercase;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-td {
-  padding: 12px;
-  border-bottom: 1px solid #e6e6e6;
-  font-size: 14px;
-}
-
-tr:last-child td {
-  border-bottom: none;
-}
-
-tbody tr:hover td{
-  background: rgba(0,0,0,.03);
-}
-
-/* ======= BADGES ======= */
-.badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  display: inline-block;
-  border: 1px solid rgba(0,0,0,.06);
-}
-
-.ok {
-  background: #e6f4ea;
-  color: #137333;
-}
-
-.warn {
-  background: #fff4e5;
-  color: #b26a00;
-  cursor: pointer;
-}
-
-.bad {
-  background: #fdecea;
-  color: #b71c1c;
-}
-
-/* ======= MODAL ======= */
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.4);
-  z-index: 9999;
-}
-
-.modal-card {
-  background: #fff;
-  width: 420px;
-  margin: 120px auto;
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.2);
-  border: 1px solid rgba(0,0,0,.08);
-}
-
-/* ======= ADMIN: TARJETA SOLICITUD (legacy) ======= */
-.solicitud {
-  background: white;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.12);
-  overflow: hidden;
-}
-
-.solicitud-header {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 12px;
-  padding: 16px 20px;
-  cursor: pointer;
-  background: #f5f5f5;
-  align-items: center;
-}
-
-.solicitud-header:hover { background: #eeeeee; }
-
-.solicitud-header strong { font-size: 15px; }
-
-.flecha {
-  font-size: 18px;
-  transition: transform .2s ease;
-}
-
-.solicitud-body {
-  display: none;
-  padding: 16px 20px 20px;
-}
-
-.solicitud.abierta .solicitud-body { display: block; }
-.solicitud.abierta .flecha { transform: rotate(90deg); }
-
-input.consecutivo {
-  width: 90px;
-  padding: 6px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-size: 13px;
-  text-align: center;
-}
-
-footer {
-  margin-top: 20px;
-  font-size: 12px;
-  color: #777;
-  text-align: right;
-}
-
-.hidden { display: none !important; }
-
-/* barra token admin (legacy) */
-.admin-bar{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  margin-bottom:14px;
-}
-.admin-bar input{
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  width:260px;
-}
-.admin-bar button{
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  cursor:pointer;
-  background:#fff;
-}
-#modo{ font-weight: 700; }
-
-/* ======= TOPBAR NUEVA (index/admin) ======= */
-.topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:16px;
-  margin-bottom: 14px;
-
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(0,0,0,.08);
-  border-radius: 16px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.10);
-  padding: 12px 12px;
-  backdrop-filter: blur(6px);
-}
-
-.admin-box{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap: wrap;
-}
-
-.admin-box input{
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  width:200px;
-  background: rgba(255,255,255,.95);
-}
-
-.admin-box button{
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #bbb;
-  cursor:pointer;
-  background:#fff;
-  transition: transform .08s ease, box-shadow .15s ease;
-}
-
-.admin-box button:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(0,0,0,.10);
-}
-
-.modo{
-  font-size: 12px;
-  color:#444;
-  min-width:120px;
-}
-
-/* ======= CARDS ADMIN (TU ESTRUCTURA ACTUAL) ======= */
-.card{
-  background:#fff;
-  border-radius:16px;
-  box-shadow:0 6px 18px rgba(0,0,0,.10);
-  margin:14px 0;
-  overflow:hidden;
-  border: 1px solid rgba(0,0,0,.08);
-}
-
-.cardHeader{
-  background: rgba(245,245,245,.92);
-  padding:14px 18px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  cursor:pointer;
-}
-
-.cardHeader:hover{
-  background: rgba(240,240,240,.95);
-}
-
-.cardHeader .meta{
-  font-size:12px;
-  color:#666;
-  margin-top:6px;
-}
-
-.arrow{
-  font-size:18px;
-  transition: transform .2s ease;
-}
-
-.cardBody{
-  display:none;
-  padding: 12px 18px 18px;
-  background: rgba(255,255,255,.90);
-}
-
-.card.open .cardBody{ display:block; }
-.card.open .arrow{ transform: rotate(90deg); }
-
-.adminTable{
-  width:100%;
-  border-collapse:collapse;
-}
-
-.adminTable th{
-  background:#f0f0f0;
-  padding:10px;
-  font-size:12px;
-  text-transform:uppercase;
-}
-
-.adminTable td{
-  padding:10px;
-  border-bottom:1px solid #e5e5e5;
-  font-size:14px;
-}
-
-.consecutivoInput{
-  width:90px;
-  padding:6px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  text-align:center;
-  background: rgba(255,255,255,.95);
-  outline: none;
-  transition: box-shadow .15s ease, border-color .15s ease;
-}
-
-.consecutivoInput:focus{
-  border-color: rgba(0,0,0,.25);
-  box-shadow: 0 0 0 4px rgba(0,0,0,.06);
-}
-
-.btnSmall{
-  padding:6px 10px;
-  border-radius:10px;
-  border:1px solid #bbb;
-  cursor:pointer;
-  background:#fff;
-  transition: transform .08s ease, box-shadow .15s ease;
-}
-
-.btnSmall:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(0,0,0,.10);
-}
-
-/* ====== MINI STATS (ADMIN) ====== */
-.adminHeaderRow{
-  display:flex;
-  align-items:center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.miniStats{
-  display:flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.chip{
-  display:flex;
-  align-items:baseline;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(0,0,0,.08);
-  box-shadow: 0 6px 14px rgba(0,0,0,.08);
-  font-size: 12px;
-}
-
-.chip span{
-  color:#6b7280;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .6px;
-  font-size: 11px;
-}
-
-.chip b{
-  font-size: 16px;
-  font-weight: 900;
-  color:#111;
-}
-
-.chip.ok b{ color:#137333; }
-.chip.warn b{ color:#b26a00; }
-
-/* ======= INPUTS FOCUS PRO ======= */
-.search-box input,
-.admin-box input,
-.filter-box select{
-  outline: none;
-  transition: box-shadow .15s ease, border-color .15s ease;
-}
-
-.search-box input:focus,
-.admin-box input:focus,
-.filter-box select:focus{
-  border-color: rgba(0,0,0,.25);
-  box-shadow: 0 0 0 4px rgba(0,0,0,.06);
-}
-
-/* ======= RESPONSIVE ======= */
-@media (max-width: 900px){
-  main{ padding: 16px; }
-  .topbar{ flex-direction: column; align-items: stretch; }
-  .filters-left{ width:100%; }
-  .search-box input{ width: 100%; }
-  .filter-box select{ width: 100%; min-width: 0; }
-  .admin-box{ justify-content: flex-start; }
-  .modal-card{ width: calc(100% - 28px); margin: 90px auto; }
-}
-
-.select{
-  padding:10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(0,0,0,.12);
-  background: rgba(255,255,255,.9);
-  font-size: 14px;
-  min-width: 220px;
-}
-.select:focus{
-  outline:none;
-  border-color: rgba(0,0,0,.25);
-  box-shadow: 0 0 0 4px rgba(0,0,0,.06);
-}
-
-.cardBody{
-  max-height:0;
-  overflow:hidden;
-  transition:max-height 0.35s ease;
-}
-
-.card.open .cardBody{
-  max-height:2000px;
-}
-
-.arrow{
-  transition: transform 0.25s ease;
-}
-
-.card.open .arrow{
-  transform: rotate(90deg);
-}
-
-.chip.active{
-  background:#e1d1d2;
-  color:white;
-  border:2px solid #e1d1d2;
-}
-
-.update-pill{
-  margin:10px 0 20px 0;
-  font-size:13px;
-  color:#475569;
-  background:#f1f5f9;
-  padding:6px 10px;
-  border-radius:6px;
-  display:inline-block;
-}
-
-.adminActions{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:10px;
-}
-
-.guardarEmpresa{
-  background:#e0e0e0;
-  border:none;
-  padding:6px 12px;
-  border-radius:6px;
-  cursor:pointer;
-  font-weight:600;
-}
-
-.guardarEmpresa:hover{
-  background:#d0d0d0;
-}
-
-.estadoCambios{
-  font-size:13px;
-  color:#6b6b6b;
-}
+</body>
+</html>
