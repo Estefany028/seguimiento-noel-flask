@@ -13,14 +13,16 @@
 
 <main>
 
-  <!-- Topbar admin: filtro empresa + stats mini -->
   <div class="topbar admin-only">
-    <div class="filters-left">
-      <div class="filter-box">
-        <select id="filtroEmpresa">
-          <option value="">Todas las empresas</option>
-        </select>
-      </div>
+
+  <div class="filters-left">
+    <div class="filter-box">
+      <select id="filtroEmpresa">
+        <option value="">Todas las empresas</option>
+      </select>
+    </div>
+
+    <input type="text" id="buscadorAdmin" placeholder="Buscar cédula en solicitudes..." />
     </div>
 
     <div class="miniStats">
@@ -28,9 +30,14 @@
       <div class="chip ok"><span>Cumplen</span><b id="statCumple">0</b></div>
       <div class="chip warn"><span>Revisar</span><b id="statRevisar">0</b></div>
     </div>
+
   </div>
 
-  <div id="adminSolicitudes"></div>
+  <div id="pillUpdate" class="update-pill">
+    Actualizando datos...
+  </div>
+
+  <div id="contenedorSolicitudes"></div>
 
   <footer>
     Sistema interno · Vista Administrador
@@ -46,4 +53,3 @@
 
 </body>
 </html>
-
