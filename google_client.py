@@ -33,4 +33,3 @@ def drive_service():
 def docs_service():
     creds = _creds()
     return build("docs", "v1", http=_authed_http(creds), cache_discovery=False)
-
