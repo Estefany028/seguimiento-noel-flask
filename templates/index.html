@@ -9,7 +9,7 @@
 
 <body>
 
-<header></header>
+<header class="banner-img"></header>
 
 <main>
 
@@ -32,7 +32,7 @@
     </div>
   </div>
 
-  <div id="estadoActualizacion"></div>
+  <div id="pillUpdate" class="update-pill">Actualizando datos...</div>
 
   <!-- ===== VISTA EXTERNO ===== -->
   <section id="vistaExterno">
@@ -57,16 +57,17 @@
     </footer>
   </section>
 
-  <!-- ===== VISTA ADMIN (ACORDEÓN POR SOLICITUD) ===== -->
-  <section id="vistaAdmin" class="hidden">
+  <!-- ===== VISTA ADMIN ===== -->
+    <section id="vistaAdmin" class="hidden">
+
     <div class="adminHeaderRow">
 
-      <!-- stats mini (solo admin) -->
       <div class="miniStats">
         <div class="chip"><span>Activos</span><b id="statTotal">0</b></div>
         <div class="chip ok"><span>Cumplen</span><b id="statCumple">0</b></div>
         <div class="chip warn"><span>Revisar</span><b id="statRevisar">0</b></div>
       </div>
+
     </div>
 
     <div id="contenedorSolicitudes"></div>
@@ -74,6 +75,7 @@
     <footer>
       Sistema interno · Vista Administrador
     </footer>
+
   </section>
 
 </main>
@@ -100,4 +102,3 @@
 <script src="/static/app.js"></script>
 </body>
 </html>
-
