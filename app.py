@@ -81,7 +81,14 @@ def api_admin_consecutivo():
 def api_admin_revalidar():
     if not is_admin_request():
         abort(403)
-    return jsonify(revalidar_activos_base())
+
+    try:
+        result = revalidar_activos_base()
+        return jsonify({"ok": True, "result": result})
+
+    except Exception as e:
+        print("❌ ERROR EN REVALIDAR:", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.get("/api/admin/debug_auth")
 def debug_auth():
